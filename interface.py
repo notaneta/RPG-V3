@@ -10,10 +10,6 @@ janela = ctk.CTk()
 janela.title("RPG V3")
 janela.geometry("1920x1080")
 
-def limpar_tela():
-    for widget in janela.winfo_children():
-        widget.destroy()
-
 # def iniciar():
 #     while True:
 #         if nome is None:
@@ -66,9 +62,10 @@ label_menu = ctk.CTkLabel(tela_menu, text="Menu Principal", font=("Arial", 24))
 label_menu.pack(pady=50)
 
 label_menu = ctk.CTkLabel(tela_menu, text="bem vindo", font=("Arial", 24))
-botao_ir = ctk.CTkButton(tela_menu, text="Vilas", command=lambda: mostrar_tela("vila"))
-
-botao_ir.pack(pady=10)
+botao_vila = ctk.CTkButton(tela_menu, text="Vilas", command=lambda: mostrar_tela("vila"))
+botao_vila.pack(pady=10)
+botao_combate = ctk.CTkButton(tela_menu, text="Combate", command=lambda: mostrar_tela("combate"))
+botao_combate.pack(pady=10)
 
 # --- Tela da Vila ---
 tela_vila = ctk.CTkFrame(janela)
