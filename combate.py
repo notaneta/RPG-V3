@@ -1,159 +1,178 @@
-from sys import flags
+import random
+import sys 
+from util import limpar_tela, barra_hp, barra_mp, barra_furia, largura, acampamento_ativo, set_acampamento
+from itens import usaritem
+from magias import usarmagia, listamagias
+from habilidades import usarfoco , listahabilidades
 
-import customtkinter as ctk
+def combateini(heroi, inimigo):   # Heroi e inimigo dentro do parenteses, recebem os dados que foram enviados em ordem no parenteses do main
 
-vidamaxheroi = 100
-vidaheroi = 50
-inimigovida = 50
-inimigovidamax = 50
+    while True:
+        limpar_tela()
+        print("======Um inimigo apareceu!======\n")
+        inimigo.mostrar_status()
+        escolha = input("\nQual sua decisão? \n[1] - Lutar\n[2] - Fugir (Chance de 50%)\n")
+        if escolha == "1":
+                combatesys(heroi, inimigo)          # Como o combateINI já recebeu os dados, aqui só peço para ele compartilhar os dados com a outra função
+                return
+        elif escolha == "2":
+            testefugir = random.randint(1, 10) 
+            if testefugir >= 5:
+                print("Você fugiu com sucesso")
+                input("Pressione ENTER para continuar...")
+                break
+            else:
+                print("Você não conseguiu fugir e terá que lutar")
+                input("Pressione ENTER para continuar...")
+                combatesys(heroi, inimigo)
+                return
 
-class Magias:
-    def __init__(self, nome, mana, dano):
-        self.nome = nome
-        self.mana = mana
-        self.dano = dano
-
-lista_magias = {
-    Magias("Fogo", 10, 5),
-    Magias("Gelo", 10, 5),
-}
-
-def atacar():
-    dano = 5
-    global inimigovida, inmigovida
-    print(f"atacou e causou {dano}")
-    mensagem = "Dano causado ao inimigo 5"
-    escrever_historico(mensagem)
-    inimigovida -= dano
-    hp_inimigo.set(inimigovida/inimigovidamax)
-    hp_inimigo_numero.configure(text=f"{inimigovida}/{inimigovidamax}")
-
-def escrever_historico(mensagem):
-    historico.configure(state="normal")
-    historico.insert("end", "\n" + mensagem)
-    historico.configure(state="disabled")
-    historico.see("end")
-
-
-def magias():
-    painel_botoes.grid_forget()
-    for item in lista_magias:
-        butao = ctk.CTkButton(lista_magias, text=f"{item.nome}")
-        butao.grid(row=0, column=0, sticky="nw", padx=5, pady=5)
-
-# Ideia interessante que posso usar depois, para algo, que necessitar quebrar/destruir o widget, porém a melhor execução
-# seria ocultar esse painel de comandos e mostrar o de magias por cima.
-
-            # def salvar_config_teste(widget, *atributos):
-            #     return {attr: widget.cget(attr) for attr in atributos}
-            #
-            # def magias_teste_destruir():
-            #     original = salvar_config_teste(botao_magia, "text", "fg_color", "hover_color", "command")
-            #     botao_magia_1 = ctk.CTkButton(painel_botoes, text="Bola de fogo")
-            #     botao_magia_1.grid(row=0, column=0, sticky="", padx=5, pady=5)
-            #     botao_magia.configure(fg_color="black", command=lambda: desativar_magias(botao_magia_1, original))
-            #     return
-            #
-            # def desativar_magias_teste_destruir(botao_magia_1,original):
-            #     botao_magia.configure(**original)
-            #     botao_magia_1.destroy()
+def combatehud(heroi, inimigo): 
+    print(f"{heroi.nome}")
+    print(f"HP [{barra_hp(heroi.vida, heroi.vidamax)}] "f"{int(heroi.vida)}/{heroi.vidamax}")
+    print(f"MP [{barra_mp(heroi.mana, heroi.manamax)}] "f"{int(heroi.mana)}/{heroi.manamax}")
+    print(f"Fúria [{barra_furia(heroi.foco, heroi.focomax)}] "f"{int(heroi.foco)}/{heroi.focomax}")
+    print(f"Ataque: {heroi.ataque}       Defesa: {heroi.defesa}")
+    print("=" * largura)
+    print(f"{inimigo.nome}")
+    print(f"HP [{barra_hp(inimigo.vida, inimigo.vidamax)}] "f"{int(inimigo.vida)}/{inimigo.vidamax}")
+    print(f"Ataque: {inimigo.ataque}")      # Posteriormente na proxima versão colocar na HUD a defesa dos monstros de cada um, pois vai ajudar a deixar o combate mais complexo, alguns melhores contra espada e outros contra magia
 
 
+    if heroi.contador_gelo > 0:
+        if heroi.contador_gelo == 1:
+            print("\nVocê será paralisado no próximo turno!")
+        else:
+            print(f"\nTurnos até ser paralisado: {heroi.contador_gelo - 1}")
+    elif heroi.contador_gelo == 0 and inimigo.skill_stun:
+        print("\nVocê será paralisado agora!")
 
-ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("dark-blue")
+def combatesys(heroi, inimigo):
+    while True:
+        while heroi.vida > 0 and inimigo.vida > 0:
+            limpar_tela()
+            combatehud(heroi, inimigo)
+            lutar = input("\n[1] - Atacar\n[2] - Lançar Magia\n[3] - Usar Item (Não passa o turno)\n[4] - Usar Habilidade\n")
+            print("\nQual sua decisão?\n")
+            turnojogador = False
 
-telas = {}
+            # Teste Stun
 
-janela = ctk.CTk()
-janela.title("RPG V3")
-janela.geometry("1920x1080")
+            if heroi.turnos_stun >= 1:
+                print("Você ficou paralisado e não conseguiu agir nesse turno!")
+                input("\nPressione ENTER para continuar...")
+                heroi.turnos_stun -= 1
+                turnojogador = True
 
-def mostrar_tela(nome):
-    for tela in telas.values():
-        tela.pack_forget()  # esconde todas
-    telas[nome].pack(fill="both", expand=True)  # mostra só a desejada
+            else:   # Sistema padrão escolhas jogador
 
-tela_combate = ctk.CTkFrame(janela)
-telas["combate"] = tela_combate
+                if lutar == '1':       
+                    turnojogador = True
+                    heroi.atacar(inimigo)
+                    heroi.turnos_stun -= 1
 
-# Esquerda da Tela
+                elif lutar == "2":
+                    if heroi.mana >= 18:
+                        turnojogador = usarmagia(heroi, inimigo)
+                    else:
+                        print("\nVocê precisa de pelo menos 25 de mana!")
+                        input("\nPressione ENTER para continuar...")
 
-hp_heroi_nome = ctk.CTkLabel(tela_combate, text="HP", font=("Impact", 14))
-hp_heroi = ctk.CTkProgressBar(tela_combate, width=490, height=20, progress_color="green")
-hp_heroi_numero = ctk.CTkLabel(tela_combate, text="30/50", font=("Impact", 14))
-hp_heroi.set(vidaheroi/vidamaxheroi)
-hp_heroi_numero.configure(text=f"{vidaheroi}/{vidamaxheroi}")
+                elif lutar == '3':
+                    usaritem(heroi)
 
-mp_heroi_nome = ctk.CTkLabel(tela_combate, text="MP", font=("Impact", 14))
-mp_heroi = ctk.CTkProgressBar(tela_combate, width=490, height=20, progress_color="blue")
-mp_heroi_numero = ctk.CTkLabel(tela_combate, text="50/50", font=("Impact", 14))
-mp_heroi.set(50/50)
-mp_heroi_numero.configure(text=f"{50}/{50}")
+                elif lutar == "4":
+                    if heroi.foco >= 25:
+                        turnojogador = usarfoco(heroi, inimigo)
 
-furia_heroi_nome = ctk.CTkLabel(tela_combate, text="Fúria", font=("Impact", 14))
-furia_heroi = ctk.CTkProgressBar(tela_combate, width=490, height=20, progress_color="orange")
-furia_heroi_numero = ctk.CTkLabel(tela_combate, text="0/100", font=("Impact", 14))
-furia_heroi.set(0/100)
-furia_heroi_numero.configure(text=f"{0}/{100}")
+                    else:
+                        print("\nVocê precisa de pelo menos 25 de fúria!")
+                        input("\nPressione ENTER para continuar...")
 
-hp_heroi_nome.grid(row=0, column=0, sticky="nw", padx=5, pady=5)
-hp_heroi.grid(row=1, column=0, padx=5, sticky="nw", pady=5)
-hp_heroi_numero.grid(row=1, column=1, sticky="nw", padx=0, pady=5)
+            if turnojogador and inimigo.vida > 0:           # Comando de ataque inimigo dentro da classe dele
+                inimigo.atacar(heroi)     # Foco do heroi é gerado no comando de atacar do inimigo / Assim caso a ação se repita, o foco gera também
+                if inimigo.habilidade is not None:
+                    for habilidade in inimigo.habilidade:
+                        habilidade(heroi, inimigo)      # Habilidade só é executada caso a vida do boss esteja no nivel correto conforme ele mesmo dispor
 
-mp_heroi_nome.grid(row=2, column=0, sticky="nw", padx=5, pady=0)
-mp_heroi.grid(row=3, column=0, sticky="nw", padx=5, pady=20)
-mp_heroi_numero.grid(row=3, column=1, sticky="nw", padx=0, pady=5)
+        # Logica Game over
 
-furia_heroi_nome.grid(row=4, column=0, sticky="nw", padx=5, pady=5)
-furia_heroi.grid(row=5, column=0, sticky="nw", padx=5, pady=5)
-furia_heroi_numero.grid(row=5, column=1, sticky="nw", padx=0, pady=5)
+        else:
+            if heroi.vida <= 0:
+                # Procura Pedra da Vida no inventário
+                pedra = next(
+                    (item for item in heroi.inventario
+                    if getattr(item, "tipo", None) == "revive" and item.quantidade > 0),
+                    None)
 
-# Direita da Tela
+                if pedra:
+                    heroi.vida = heroi.vidamax // 2
+                    heroi.removeritem(pedra)
+                    print(f"\n[{pedra.nome}] brilha e se desfaz!")
+                    print(f"Você revive com {heroi.vida}/{heroi.vidamax} de HP.")
+                    input("Pressione ENTER para continuar...")
+                    # Continua o combate: reentra no while
+                    continue
+                    
+                else:
+                    print("\nSeu HP foi reduzido a 0, Você perdeu...\n[GAME OVER]\n")
 
-tela_combate.grid_columnconfigure(2, weight=1)
+                    while True:
+                        escolha3 = input("Continuar? (s/n)")
+                        if escolha3 == "s":
+                            from database import menu_principal 
+                            menu_principal()
+                        elif escolha3 == "n":
+                            sys.exit()
 
-painel_inimigo = ctk.CTkFrame(tela_combate, fg_color="transparent")
+                        else:
+                            print("Comando invalido")
 
-inimigo_nome = ctk.CTkLabel(painel_inimigo, text="Goblin", font=("Impact", 14))
-hp_inimigo = ctk.CTkProgressBar(painel_inimigo, width=490, height=20, progress_color="red")
-hp_inimigo_numero = ctk.CTkLabel(painel_inimigo, text="50/50", font=("Impact", 14))
-hp_inimigo.set(inimigovida/inimigovida)
-hp_inimigo_numero.configure(text=f"{inimigovida}/{inimigovidamax}")
+            # Logica vecer batalha 
 
-historico = ctk.CTkTextbox(painel_inimigo, height=200)
-historico.insert("0.0", "Combate Iniciado!")
-historico.configure(state="disabled")
+            elif inimigo.vida <= 0:
+                inimigo.skill_stun = False
+                limpar_tela()
 
-tela_combate.grid_rowconfigure(6, weight=1)  # linha elástica
-painel_botoes = ctk.CTkFrame(tela_combate, fg_color="transparent")
+                print(f"\nVocê derrotou o inimigo e recebeu {inimigo.ouro} de OURO e {inimigo.xp} de XP")
 
-botao_ataque = ctk.CTkButton(painel_botoes, text="Atacar", command=atacar)
-botao_magia = ctk.CTkButton(painel_botoes, text="Mágias", command=magias)
-botao_habilidade = ctk.CTkButton(painel_botoes, text="Habilidades")
-botao_item = ctk.CTkButton(painel_botoes, text="Itens")
+                heroi.ouro += inimigo.ouro
+                heroi.xp += inimigo.xp
+                heroi.foco = 0
 
-# Painel fica no canto superior direito da tela
-painel_inimigo.grid(row=0, column=2, rowspan=6, sticky="ne", padx=20, pady=5)
-painel_botoes.grid(row=7, column=2, sticky="se", padx=20, pady=20)
+                input("\nPressione ENTER para continuar...\n")
 
-# Dentro do painel (grid próprio)
-painel_inimigo.grid_columnconfigure(0, weight=1)
+                heroi.subirnivel(listahabilidades, listamagias)
 
-inimigo_nome.grid(row=0, column=0, sticky="e", pady=5)
-hp_inimigo.grid(row=1, column=0, sticky="e", pady=5)
-hp_inimigo_numero.grid(row=2, column=0, sticky="e", pady=5)
+                import progresso
 
-historico.grid(row=3, column=0, sticky="ew", pady=5)
+                if progresso.avancar_jogo:
+                    heroi.zona_atual.avançarjogo()
 
-botao_ataque.grid(row=4, column=0, sticky="e", pady=5)
-botao_magia.grid(row=5, column=0, sticky="e", pady=5)
-botao_habilidade.grid(row=6, column=0, sticky="e", pady=5)
-botao_item.grid(row=7, column=0, sticky="e", pady=5)
+                # Evento acampamento
+                if acampamento_ativo():
+                    from eventos import acampamento
 
+                    while True:
+                        limpar_tela()
+                        print("=" * 54)
+                        print(f"ACAMPAMENTO".center(54))
+                        print("=" * 54)
+                        print("Depois da batalha, você encontra um local para acampar...")
+                        print("[1] - Acampar (Restaura 30% HP/MP) Risco de evento")
+                        print("[2] - Voltar")
 
-# Tela inicial
-mostrar_tela("combate")
+                        escolha = input("\nOque fazer? ")
 
-janela.mainloop()
+                        if escolha == "1":
+                            acampamento(heroi)
+                            return
 
+                        elif escolha == "2":
+                            return
+
+                        else:
+                            print("Opção invalida")
+                            input("\nPressione ENTER para continuar...")
+
+                return
