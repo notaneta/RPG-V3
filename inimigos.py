@@ -30,7 +30,6 @@ class Monstro:
             heroi.vida -= ataquefinal
             print(f"\nO {self.nome} te ataca causando {ataquefinal} de dano")
             heroi.foco = min(100, heroi.foco + (random.randint(3, 6) + heroi.focogen * 0.07))
-            input("\nPressione ENTER para continuar...\n")
         
 class Inimigo(Monstro):
     def __init__(self, nome, vida, ataque, ouro, xp) : 

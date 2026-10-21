@@ -4,6 +4,9 @@ import customtkinter as ctk
 import combate_interface
 from heroi import Heroi
 jogador = None
+import random
+from copy import deepcopy
+import inimigos
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("dark-blue")
@@ -26,6 +29,7 @@ def salvar_nome():
     print(nome)
 
     if not nome:  # nome vazio
+        nome_input.configure(placeholder_text="Precisa digitar o seu nome!", placeholder_text_color="red")
         print("Digite um nome!")
         return
 
@@ -54,7 +58,15 @@ label_menu.pack(pady=50)
 label_menu = ctk.CTkLabel(tela_menu, text="bem vindo", font=("Arial", 24))
 botao_vila = ctk.CTkButton(tela_menu, text="Vilas", command=lambda: mostrar_tela("vila"))
 botao_vila.pack(pady=10)
-botao_combate = ctk.CTkButton(tela_menu, text="Combate", command=lambda: mostrar_tela("combate"))
+
+def abrir_combate():
+    if jogador is None:  # segurança: ainda não digitou o nome
+        return
+    inimigo = deepcopy(random.choice(inimigos.inimigos_floresta))
+    combate_interface.iniciar_combate(jogador, inimigo)
+    mostrar_tela("combate")
+
+botao_combate = ctk.CTkButton(tela_menu, text="Combate", command=abrir_combate)
 botao_combate.pack(pady=10)
 
 # --- Tela da Vila ---
@@ -95,15 +107,14 @@ botao_voltar.pack(pady=10)
 # --- Tela de Combate ---
 tela_combate = ctk.CTkFrame(janela)
 telas["combate"] = tela_combate
-combate_interface.criar_tela_combate(tela_combate)  # monta uma vez
-
+combate_interface.criar_tela_combate(tela_combate)  # monta uma vez ao ser iniciado o programa
 
 
 mostrar_tela("inicio")
 
-# Testar se chamar tela combate funcionou
-# Botões magias sendo criados
-# Ver se salva o nome digitado do heroi 
+
+
+
 
 # Trocar botões para grid, deixar na parte de baixo da tela
 # Interligar interface de luta com os valores reais do heroi e do inimigo. (valores do inimigo, tem que ser definido/randomizado antes de ser mandado os dados para a interface)

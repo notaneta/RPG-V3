@@ -1,3 +1,3 @@
-from interface import janela
+from menu_interface import janela
 
 janela.mainloop()

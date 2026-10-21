@@ -137,11 +137,11 @@ class Personagem:
 
         print("==========================================")
 
-    def atacar(self, inimigo):
+    def atacar_calculo(self, inimigo):
         ataquefinal = max(1, self.ataque - inimigo.defesa)
         inimigo.vida -= ataquefinal
         print(f"\nVoce ataca o {inimigo.nome} com sua espada e causa {ataquefinal} de dano.")
-        input("\nPressione ENTER para continuar...")
+        return ataquefinal
     
 
 class Heroi(Personagem):
