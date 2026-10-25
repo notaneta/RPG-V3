@@ -1,6 +1,6 @@
-from util import limpar_tela
 from habilidades import listahabilidades
 from copy import deepcopy
+from magias import listamagias
 
 class Personagem:
 
@@ -22,7 +22,7 @@ class Personagem:
         self.focogen = 0.02        # Gerador de furia aumenta conforme derrota chefes ou eventos rolam, ou até mesmo lugar para aumentar
         # O inventário vazio, é uma lista de objetos
         self.inventario = []
-        self.magiasaprendidas = []
+        self.magiasaprendidas = [listamagias[0]]
         self.habilidadesaprendidas=[listahabilidades[0]]
         self.turnos_veneno = 0
         self.contador_gelo = 0
@@ -34,35 +34,35 @@ class Personagem:
         print(f"Ataque: {self.ataque}      Defesa: {self.defesa}")
         print(f"Ouro: {self.ouro}        Nível: {self.nivel}")    
 
-    def subirnivel(self, listahabilidades, listamagias): 
+    def subirnivel(self):
         from habilidades import listahabilidades
         from magias import listamagias
+        mensagens = []
         while self.xp >= self.xplevel:
+
             self.vidamax = int(self.vidamax * 1.06)
-            self.vida = min(self.vidamax, self.vida + self.vidamax * 0.50)      # Recupera vida 40% ao subir de level
+            self.vida = int(min(self.vidamax, self.vida + self.vidamax * 0.40))      # Recupera vida 40% ao subir de level
             self.manamax = int(self.manamax * 1.10)
-            self.mana += min(self.manamax, self.mana + self.manamax * 0.50)      # Recupera mana 40% ao subir de level
+            self.mana = int(min(self.manamax, self.mana + self.manamax * 0.40))    # Recupera mana 40% ao subir de level
             self.ataque = int(self.ataque * 1.07)
             self.defesa += 1
             self.xp -= self.xplevel
             self.nivel += 1
             self.xplevel = int(self.xplevel * 1.30)
 
-            limpar_tela()
-            print(f"\nParabéns você subiu para o nivel {self.nivel}!")
-            print(f"Você teve seu HP e MP restaurado em 40%")
-            input("\nPressione ENTER para continuar...")
+            mensagens.append("Você subiu de nível!")
+            mensagens.append(f"Nível Atual: {self.nivel}")
+            mensagens.append(f"Você teve seu HP e MP restaurado em 40%")
+
             for skill in listahabilidades:
                 if skill.requisito <= self.nivel and skill not in self.habilidadesaprendidas:   # Para cada SKILL que o requisito estiver acima ou igual o nivel do heroi, adicionar ela para o heroi
-                    self.aprenderhabilidade(skill)        
-                    input("\nPressione ENTER para continuar...\n")
+                    mensagens.append(self.aprenderhabilidade(skill))
             for magia in listamagias:
                 if magia.requisito <= self.nivel and magia not in self.magiasaprendidas:  # Além disso verifica se a magia ou skill já não foi aprendida, para evitar duplicidade
-                    self.aprendermagia(magia)
-                    input("\nPressione ENTER para continuar...\n")
-                                
-            self.mostrar_status()
-            input("\nPressione ENTER para continuar...")
+                    mensagens.append(self.aprendermagia(magia))
+        return  mensagens
+
+
         
     def adicionar_pocoes(self, novo_item):
         for item in self.inventario:
@@ -105,7 +105,7 @@ class Personagem:
 
     def aprendermagia(self, nova_magia):
         self.magiasaprendidas.append(nova_magia)
-        print(f"\nNova Magia aprendida: {nova_magia.nome}!")
+        return f"Nova Magia aprendida: {nova_magia.nome}!"
 
     def mostrarmagias(self):   
         """Exibe todas as magias que o personagem possui."""
@@ -122,7 +122,7 @@ class Personagem:
 
     def aprenderhabilidade(self, nova_habilidade):
         self.habilidadesaprendidas.append(nova_habilidade)
-        print(f"\nNova Habilidade Aprendida: {nova_habilidade.nome}!")
+        return f"Nova Habilidade aprendida: {nova_habilidade.nome}!"
 
     def mostrarSkill(self):   
         """Exibe todas as habilidade que o personagem possui."""
@@ -140,9 +140,8 @@ class Personagem:
     def atacar_calculo(self, inimigo):
         ataquefinal = max(1, self.ataque - inimigo.defesa)
         inimigo.vida -= ataquefinal
-        print(f"\nVoce ataca o {inimigo.nome} com sua espada e causa {ataquefinal} de dano.")
         return ataquefinal
-    
+
 
 class Heroi(Personagem):
     def __init__(self, nome):   #  nome, vida 180, ataque 13, defesa 7, mana 30, ouro 30, nivel 1, xp 0, xplevel 40 , foco 0):

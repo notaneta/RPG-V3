@@ -48,6 +48,16 @@ def usarmagia(heroi, inimigo):
             input("Pressione ENTER para continuar...")
             return False
 
+def executar_magia(heroi, inimigo, magia):
+    if heroi.mana >= magia.custo:
+        heroi.mana -= magia.custo
+        danofinal = max(1, magia.dano - inimigo.defesa_magica)
+        inimigo.vida -= danofinal
+    else:
+        danofinal = None
+    return danofinal
+
+
 listamagias = [
     # Nome, Dano, Custo MP, Nível Requisito
     magias("1", "Chamas de Fogo", 22, 18, 2),

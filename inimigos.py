@@ -1,5 +1,6 @@
 import random
 from lore import dialogo
+
 texto_lobo = True
 veneno = False
 acabou_de_ativar = False
@@ -25,11 +26,12 @@ class Monstro:
         print(f"Vida: {self.vida}/{self.vidamax}")
         print(f"Ataque: {self.ataque}")
 
-    def atacar(self, heroi):            # Foco do heroi dento do ataque do inimigo para poder garantir que seja gerado caso atacar 2 vezes
+    def atacar_calculo(self, heroi):            # Foco do heroi dento do ataque do inimigo para poder garantir que seja gerado caso atacar 2 vezes
             ataquefinal = max(1, self.ataque - heroi.defesa)
             heroi.vida -= ataquefinal
             print(f"\nO {self.nome} te ataca causando {ataquefinal} de dano")
             heroi.foco = min(100, heroi.foco + (random.randint(3, 6) + heroi.focogen * 0.07))
+            return ataquefinal
         
 class Inimigo(Monstro):
     def __init__(self, nome, vida, ataque, ouro, xp) : 

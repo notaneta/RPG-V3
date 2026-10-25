@@ -5,10 +5,10 @@ Fluxo:
     2. iniciar_combate(heroi, inimigo) -> preenche a tela com os dados (a cada combate)
     3. os botões chamam atacar(), abrir_magias(), etc.
 """
-
 import random
 from copy import deepcopy
-
+from magias import listamagias, executar_magia
+from habilidades import listahabilidades, executar_skill
 import customtkinter as ctk
 
 
@@ -24,33 +24,19 @@ POSICAO_PAINEL = dict(row=7, column=2, sticky="se", padx=20, pady=20)
 # ============================================================
 jogador = None
 inimigo = None
+botoes_magias = []
+botao_skills = []
 lista_de_botoes = []   # botões de ação (para bloquear/liberar de uma vez)
 
 # Widgets: são criados em criar_tela_combate, mas ficam declarados aqui
 # para as outras funções do arquivo poderem usar.
 hp_heroi = hp_heroi_numero = None
+hp_heroi_nome = hp_heroi = hp_heroi_numero = None
 mp_heroi = mp_heroi_numero = None
 furia_heroi = furia_heroi_numero = None
 inimigo_nome = hp_inimigo = hp_inimigo_numero = None
 historico = None
 painel_botoes = painel_magias = None
-
-
-# ============================================================
-# DADOS PROVISÓRIOS
-# ============================================================
-class Magias:  # Provisório para teste
-    def __init__(self, nome, mana, dano):
-        self.nome = nome
-        self.mana = mana
-        self.dano = dano
-
-
-lista_magias = [
-    Magias("Fogo", 10, 5),
-    Magias("Gelo", 10, 5),
-]
-
 
 # ============================================================
 # INÍCIO DO COMBATE
@@ -60,18 +46,23 @@ def iniciar_combate(heroi_recebido, inimigo_recebido):
     jogador = heroi_recebido
     inimigo = deepcopy(inimigo_recebido)  # cópia, para não alterar o inimigo original
 
+    criar_magia()
+    criar_skill()
+
     limpar_historico()
     atualizar_tela()
     liberar_botoes()
+
 
 
 # ============================================================
 # ATUALIZAÇÃO DA TELA
 # ============================================================
 def atualizar_tela():
-    # Herói
-    hp_heroi.set(jogador.vida / jogador.vidamax)
-    hp_heroi_numero.configure(text=f"{int(jogador.vida)}/{jogador.vidamax}")
+    # Herói também acrescentado agora vida max até 0, não fica negativa e além disso tem nome do jogador na tela
+    hp_heroi_nome.configure(text=f"HP de {jogador.nome}")
+    hp_heroi.set(max(0, jogador.vida) / jogador.vidamax)
+    hp_heroi_numero.configure(text=f"{max(0, int(jogador.vida))}/{jogador.vidamax}")
     mp_heroi.set(jogador.mana / jogador.manamax)
     mp_heroi_numero.configure(text=f"{int(jogador.mana)}/{jogador.manamax}")
     furia_heroi.set(jogador.foco / jogador.focomax)
@@ -81,7 +72,6 @@ def atualizar_tela():
     inimigo_nome.configure(text=inimigo.nome)
     hp_inimigo.set(max(0, inimigo.vida) / inimigo.vidamax)
     hp_inimigo_numero.configure(text=f"{max(0, int(inimigo.vida))}/{inimigo.vidamax}")
-
 
 def escrever_historico(mensagem):
     historico.configure(state="normal")   # libera para escrita
@@ -106,6 +96,50 @@ def liberar_botoes():
     for botao in lista_de_botoes:
         botao.configure(state="normal")
 
+def verificar_fim(): # Verifica condições, se GAME OVER, ou recompensas
+    global botao_continuar
+    if jogador.vida <= 0:
+        escrever_historico("Jogador Derrotado!")
+        escrever_historico("GAME OVER")
+        bloquear_botoes()
+        botao_continuar = ctk.CTkButton(painel, text="continuar", command=fim_combate, font=FONTE)
+        botao_continuar.grid(row=4, column=0, sticky="ew", pady=5)
+        return True
+
+
+    if inimigo.vida <= 0:
+
+        jogador.ouro += inimigo.ouro
+        jogador.xp += inimigo.xp
+
+        escrever_historico("Inimigo Derrotado!")
+        bloquear_botoes()
+        botao_continuar = ctk.CTkButton(painel, text="Continuar", command=fim_combate)
+        botao_continuar.grid(row=4, column=0, sticky="ew", pady=5)
+        historico.configure(state="normal")  # libera para escrita
+        historico.insert("end", "\n" + f"Você recebeu {inimigo.ouro} de ouro e {inimigo.xp} de XP!")
+        historico.insert("end", "\n" + f"Seu ouro atual: {jogador.ouro}")
+
+        historico.configure(state="disabled")  # trava de novo
+        historico.see("end")
+
+        calculo_combate = jogador.subirnivel()
+        for item in calculo_combate:
+            escrever_historico(item)
+
+        escrever_historico(f"Seu XP: {jogador.xp} / {jogador.xplevel}")
+
+        return True
+
+def fim_combate():
+    if inimigo.vida <= 0:
+        botao_continuar.grid_forget()
+        from menu_interface import telas, mostrar_tela
+        mostrar_tela("vila")
+
+    if jogador.vida <= 0:
+        from menu_interface import  janela
+        janela.destroy()  # Fecha janela Ao morrer
 
 # ============================================================
 # AÇÕES DO JOGADOR
@@ -115,11 +149,39 @@ def atacar():
     dano = jogador.atacar_calculo(inimigo)  # tira a vida do inimigo e devolve o dano
     escrever_historico(f"Dano causado ao inimigo: {dano}")
     atualizar_tela()
-    historico.after(1000, turno_inimigo)  # sem parênteses: agenda para daqui 1 s
+    if verificar_fim():    # Verifica primeiro se inimigo tem vida para continuar combate
+        return
+    historico.after(0, turno_inimigo)  # sem parênteses: agenda para daqui 1 s  colocar dps dnv 800
 
 
 def lancar_magia(magia):
-    escrever_historico(f"{magia.nome} foi lançada!")
+    dano = executar_magia(jogador, inimigo, magia)
+    if dano is None:
+        escrever_historico("MP Insuficiente para a magia!")
+        return
+    else:
+        escrever_historico(f"Você usou {magia.nome}!")
+        escrever_historico(f"Dano causado ao inimigo: {dano}")
+        atualizar_tela()
+        voltar()
+        bloquear_botoes()
+        verificar_fim()
+        turno_inimigo()
+
+
+def lancar_skill(skill):
+    dano = executar_skill(jogador, inimigo, skill)
+    if dano is None:
+        escrever_historico("MP Insuficiente para a magia!")
+        return
+    else:
+        escrever_historico(f"Você usou {skill.nome}!")
+        escrever_historico(f"Dano causado ao inimigo: {dano}")
+        atualizar_tela()
+        voltar_skills()
+        bloquear_botoes()
+        verificar_fim()
+        turno_inimigo()
 
 
 # ============================================================
@@ -128,11 +190,13 @@ def lancar_magia(magia):
 def turno_inimigo():
     # Provisório: o inimigo.atacar() original tem input() e congelaria a janela.
     # Melhorar a IA depois (sortear entre ataque e habilidade).
-    dano = max(1, inimigo.ataque - jogador.defesa)
-    jogador.vida = max(0, jogador.vida - dano)
+    dano = inimigo.atacar_calculo(jogador)
     escrever_historico(f"{inimigo.nome} causou {dano} de dano em você")
     atualizar_tela()
     liberar_botoes()
+    if verificar_fim():
+        return
+
 
 
 # ============================================================
@@ -146,6 +210,16 @@ def abrir_magias():
 def voltar():
     painel_magias.grid_forget()
     painel_botoes.grid(**POSICAO_PAINEL)
+
+def abrir_skills():
+    painel_botoes.grid_forget()
+    painel_botoes.grid(**POSICAO_PAINEL)
+
+
+def voltar_skills():
+    painel_skills.grid_forget()
+    painel_botoes.grid(**POSICAO_PAINEL)
+
 
 
 # ============================================================
@@ -161,7 +235,7 @@ def criar_tela_combate(tela_combate):  # recebe o frame, não cria janela
 
 
 def criar_barra(tela, nome, cor, linha):
-    """Cria rótulo + barra + número. Devolve (barra, numero)."""
+    """Cria rótulo + barra + número. Devolve (rótulo, barra, numero)."""
     rotulo = ctk.CTkLabel(tela, text=nome, font=FONTE)
     barra = ctk.CTkProgressBar(tela, width=490, height=20, progress_color=cor)
     numero = ctk.CTkLabel(tela, text="", font=FONTE)
@@ -170,21 +244,22 @@ def criar_barra(tela, nome, cor, linha):
     rotulo.grid(row=linha, column=0, sticky="nw", padx=5, pady=5)
     barra.grid(row=linha + 1, column=0, sticky="nw", padx=5, pady=5)
     numero.grid(row=linha + 1, column=1, sticky="nw", padx=0, pady=5)
-    return barra, numero
+    return rotulo, barra, numero
 
 
 def criar_lado_heroi(tela):
-    global hp_heroi, hp_heroi_numero
+    global hp_heroi_nome, hp_heroi, hp_heroi_numero
     global mp_heroi, mp_heroi_numero
     global furia_heroi, furia_heroi_numero
 
-    hp_heroi, hp_heroi_numero = criar_barra(tela, "HP", "green", linha=0)
-    mp_heroi, mp_heroi_numero = criar_barra(tela, "MP", "blue", linha=2)
-    furia_heroi, furia_heroi_numero = criar_barra(tela, "Fúria", "orange", linha=4)
+# O _ é a convenção do Python para “recebi esse valor, mas não vou usar”. O MP e a Fúria não precisam mudar de texto, então jogam o rótulo fora.
+    hp_heroi_nome, hp_heroi, hp_heroi_numero = criar_barra(tela, "HP", "green", linha=0)
+    _, mp_heroi, mp_heroi_numero = criar_barra(tela, "MP", "blue", linha=2)
+    _, furia_heroi, furia_heroi_numero = criar_barra(tela, "Fúria", "orange", linha=4)
 
 
 def criar_lado_inimigo(tela):
-    global inimigo_nome, hp_inimigo, hp_inimigo_numero, historico
+    global inimigo_nome, hp_inimigo, hp_inimigo_numero, historico, painel
 
     painel = ctk.CTkFrame(tela, fg_color="transparent")
     painel.grid(row=0, column=2, rowspan=6, sticky="ne", padx=20, pady=5)
@@ -205,17 +280,18 @@ def criar_lado_inimigo(tela):
 
 
 def criar_botoes(tela):
-    global painel_botoes, painel_magias
+    global painel_botoes, painel_magias, painel_skills
 
     painel_botoes = ctk.CTkFrame(tela, fg_color="transparent")
     painel_magias = ctk.CTkFrame(tela, fg_color="transparent")
+    painel_skills = ctk.CTkFrame(tela, fg_color="transparent")
     painel_botoes.grid(**POSICAO_PAINEL)  # o painel de magias começa escondido
 
     # Botões de ação: (texto, função). None = ainda sem ação.
     acoes = [
         ("Atacar", atacar),
         ("Mágias", abrir_magias),
-        ("Habilidades", None),
+        ("Habilidades", abrir_skills),
         ("Itens", None),
     ]
 
@@ -225,16 +301,33 @@ def criar_botoes(tela):
         botao.grid(row=linha, column=0, sticky="e", pady=5)
         lista_de_botoes.append(botao)
 
-    # Botões das magias, criados uma vez só
-    for linha, magia in enumerate(lista_magias):
-        botao = ctk.CTkButton(painel_magias, text=magia.nome,
-                              command=lambda m=magia: lancar_magia(m))
+
+def criar_magia():
+    for b in botoes_magias:
+        b.destroy()
+    botoes_magias.clear()
+
+    for linha, magia in enumerate(jogador.magiasaprendidas):
+        botao = ctk.CTkButton(painel_magias, text=magia.nome, command=lambda m=magia: lancar_magia(m))
         botao.grid(row=linha, column=0, sticky="nw", padx=5, pady=5)
 
     botao_voltar = ctk.CTkButton(painel_magias, text="Voltar", command=voltar)
-    botao_voltar.grid(row=len(lista_magias), column=0, sticky="nw", padx=5, pady=5)
+    botao_voltar.grid(row=len(jogador.magiasaprendidas), column=0, sticky="nw", padx=5, pady=5)
 
 
+
+
+def criar_skill():
+    for b in botao_skills:
+        b.destroy()
+    botao_skills.clear()
+
+    for linha, skill in enumerate(jogador.habilidadesaprendidas):
+        botao = ctk.CTkButton(painel_skills, text=skill.nome, command=lambda m=skill: usar_skill(m))
+        botao.grid(row=linha, column=0, sticky="nw", padx=5, pady=5)
+
+    botao_voltar = ctk.CTkButton(painel_skills, text="Voltar", command=voltar)
+    botao_voltar.grid(row=len(jogador.habilidadesaprendidas), column=0, sticky="nw", padx=5, pady=5)
 # ============================================================
 # IDEIAS PARA DEPOIS
 # ============================================================
