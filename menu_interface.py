@@ -56,18 +56,10 @@ label_menu = ctk.CTkLabel(tela_menu, text="Menu Principal", font=("Arial", 24))
 label_menu.pack(pady=50)
 
 label_menu = ctk.CTkLabel(tela_menu, text="bem vindo", font=("Arial", 24))
+botao_area = ctk.CTkButton(tela_menu, text="Aventurar", command=lambda: mostrar_tela("area"))
+botao_area.pack(pady=10)
 botao_vila = ctk.CTkButton(tela_menu, text="Vilas", command=lambda: mostrar_tela("vila"))
 botao_vila.pack(pady=10)
-
-def abrir_combate():
-    if jogador is None:  # segurança: ainda não digitou o nome
-        return
-    inimigo = deepcopy(random.choice(inimigos.inimigos_floresta))
-    combate_interface.iniciar_combate(jogador, inimigo)
-    mostrar_tela("combate")
-
-botao_combate = ctk.CTkButton(tela_menu, text="Combate", command=abrir_combate)
-botao_combate.pack(pady=10)
 
 # --- Tela da Vila ---
 tela_vila = ctk.CTkFrame(janela)
@@ -81,24 +73,34 @@ botao_ferreiro.pack(pady=10)
 botao_voltar = ctk.CTkButton(tela_vila, text="Voltar", command=lambda: mostrar_tela("menu"))
 botao_voltar.pack(pady=10)
 
+# --- Tela Ferreiro ---
+
 tela_ferreiro = ctk.CTkFrame(janela)
 telas["ferreiro"] = tela_ferreiro
 
 botao_voltar = ctk.CTkButton(tela_ferreiro, text="Voltar", command=lambda: mostrar_tela("vila"))
 botao_voltar.pack(pady=10)
 
-# --- Tela da Mundo ---
+def abrir_combate(inimigoaleatório):
+    combate_interface.iniciar_combate(jogador, inimigoaleatório)
+    mostrar_tela("combate")
+
+# --- Tela do Mundo ---
 tela_area = ctk.CTkFrame(janela)
 telas["area"] = tela_area
-
-label_area = ctk.CTkLabel(tela_area, text=f"Você está na área: ", font=("Arial", 24))
+from mundo import  zona_atual
+label_area = ctk.CTkLabel(tela_area, text=f"Você está em: {zona_atual.nome}", font=("Arial", 24))
 label_area.pack(pady=50)
+label_area_progresso = ctk.CTkLabel(tela_area, text=f"Inimigos derrotados: {zona_atual.progresso}", font=("Arial", 24))
+label_area_progresso.pack(pady=50)
 
-# botao_Explorar = ctk.CTkbutton(tela_area, text="Explorar", command=iniciar_exploração) #  Adaptar a função de explorar do RPG
-# botao_Explorar.pack(pady=10)
-#
-# botao_prosseguir = ctk.CTkbutton(tela_area, text="Seguir em frente")
-# botao_prosseguir.pack(pady=10)
+
+from mundo import  iniciar_exploracao
+botao_explorar = ctk.CTkButton(tela_area, text="Explorar", command=iniciar_exploracao) #  Adaptar a função de explorar do RPG
+botao_explorar.pack(pady=10)
+
+botao_prosseguir = ctk.CTkButton(tela_area, text="Viajar") # Viaja para a proxima area
+botao_prosseguir.pack(pady=10)
 
 botao_voltar = ctk.CTkButton(tela_area, text="Voltar", command=lambda: mostrar_tela("menu"))
 botao_voltar.pack(pady=10)
@@ -108,6 +110,8 @@ botao_voltar.pack(pady=10)
 tela_combate = ctk.CTkFrame(janela)
 telas["combate"] = tela_combate
 combate_interface.criar_tela_combate(tela_combate)  # monta uma vez ao ser iniciado o programa
+
+
 
 
 mostrar_tela("inicio")

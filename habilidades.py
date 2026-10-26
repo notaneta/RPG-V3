@@ -61,7 +61,7 @@ def usarfoco(heroi, inimigo):
 def executar_skill(heroi, inimigo, skill):
     if heroi.foco >= skill.custo:
         heroi.foco -= skill.custo
-        danofinal = max(1, skill.dano - inimigo.defesa_magica)
+        danofinal = max(1, skill.dano - inimigo.defesa)
         inimigo.vida -= danofinal
     else:
         danofinal = None

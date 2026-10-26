@@ -94,6 +94,21 @@ def usaritem(heroi):
         input("Pressione ENTER para continuar...")
         return
 
+def executar_item(heroi, item):
+    if item.tipo == "vida":
+        curado = min(item.cura, heroi.vidamax - heroi.vida)
+        heroi.vida += curado
+        resultado = f"Você usou {item.nome} e recuperou {curado} de HP."
+        return resultado
+    elif item.tipo == "mana":
+        restaurado = min(item.cura, heroi.manamax - heroi.mana)
+        heroi.mana += restaurado
+        resultado = f"Você usou {item.nome} e recuperou {restaurado} de MP."
+        return resultado
+    elif item.tipo == "revive":
+        mensagem = "Não é possível usar o item, o mesmo é usado automaticamente ao chegar a 0 de HP"
+        return mensagem
+
 
 class Amuletos_Ataque:
     def __init__(self, nome, descricao, dano, custo):

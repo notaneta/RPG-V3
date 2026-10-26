@@ -29,7 +29,6 @@ class Monstro:
     def atacar_calculo(self, heroi):            # Foco do heroi dento do ataque do inimigo para poder garantir que seja gerado caso atacar 2 vezes
             ataquefinal = max(1, self.ataque - heroi.defesa)
             heroi.vida -= ataquefinal
-            print(f"\nO {self.nome} te ataca causando {ataquefinal} de dano")
             heroi.foco = min(100, heroi.foco + (random.randint(3, 6) + heroi.focogen * 0.07))
             return ataquefinal
         

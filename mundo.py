@@ -74,6 +74,20 @@ class Progressao:
     def avançarjogo(self):
         self.progresso +=1
 
+    def explorar(self, heroi):
+        inimigoaleatório = copy.deepcopy(random.choice(self.lista_inimigos))
+        combateini(heroi, inimigoaleatório)
+        return
+
+def iniciar_exploracao():
+    # Verificar contagem
+    # Definir inimigo
+    from menu_interface import abrir_combate
+    inimigoaleatório = copy.deepcopy(random.choice(zona_atual.lista_inimigos))
+    abrir_combate(inimigoaleatório)
+    # Combate
+    # Aumentar contagem
+    print()
 
 # 1. Zonas
 zona5_abismo = Progressao("Abismo do Rei", None, boss_abismo, proximo_cenario=None)

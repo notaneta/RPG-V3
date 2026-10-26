@@ -7,6 +7,12 @@ janela.mainloop()
 # Terminar de colocar magias para funcionar e dps as skills que comecei a tentar tbm
 
 # Criar a função finalizar turno Heroi
+#def finalizar_acao_heroi():
+    # 1. bloquear botões
+    # 2. atualizar a tela
+    # 3. voltar ao painel principal
+    # 4. se verificar_fim(): return
+    # 5. agendar o turno do inimigo
 
 
 # Nova mecanica
