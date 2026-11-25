@@ -84,11 +84,13 @@ class Personagem:
 
     def equipar_ataque(self, amuleto):
         self.amuleto_ataque = amuleto
-        print(f"{amuleto.nome} equipado (Ataque +{amuleto.dano}).")
+        print(f"{amuleto.nome} equipado (Ataque +{amuleto.dano}).") # Apenas mostrar no terminal o dano do heroi
+        return self.ataque
 
     def equipar_defesa(self, amuleto):
-        self.amuleto_defesa = amuleto
+        self.amuleto_defesa = amuleto           # Apenas mostrar no terminal a defesa do heroi
         print(f"{amuleto.nome} equipado (Defesa +{amuleto.defesa}).")
+        return self.defesa
 
     def mostrar_inventario_pocoes(self):   
         """Exibe todos os itens que o personagem possui."""
@@ -145,10 +147,11 @@ class Personagem:
 
 class Heroi(Personagem):
     def __init__(self, nome):   #  nome, vida 180, ataque 13, defesa 7, mana 30, ouro 30, nivel 1, xp 0, xplevel 40 , foco 0):
-        super().__init__(nome, 170, 35, 7, 30, 30, 1, 0, 40, 0) # Herdou os parametros de personagem / Aqui já configuro os status inicias também
+        super().__init__(nome, 170, 65, 27, 30, 30, 1, 0, 40, 0) # Herdou os parametros de personagem / Aqui já configuro os status inicias também
         from vilas import vila_inicial
         self.vila_atual = vila_inicial
         import mundo  
         self.zona_atual = mundo.zona1_floresta
 
 # ATAQUE PADRÃO É 13
+# Defesa 7

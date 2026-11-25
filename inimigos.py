@@ -26,12 +26,15 @@ class Monstro:
         print(f"Vida: {self.vida}/{self.vidamax}")
         print(f"Ataque: {self.ataque}")
 
-    def atacar_calculo(self, heroi):            # Foco do heroi dento do ataque do inimigo para poder garantir que seja gerado caso atacar 2 vezes
-            ataquefinal = max(1, self.ataque - heroi.defesa)
-            heroi.vida -= ataquefinal
-            heroi.foco = min(100, heroi.foco + (random.randint(3, 6) + heroi.focogen * 0.07))
-            return ataquefinal
-        
+    def atacar_calculo(self, heroi, defendendo=False, gera_furia=True):
+        ataquefinal = max(1, self.ataque - heroi.defesa)
+        if defendendo:
+            ataquefinal = max(1, ataquefinal // 2)  # "dano pela metade"
+        heroi.vida -= ataquefinal
+        if gera_furia:
+            heroi.foco = min(100, heroi.foco + random.randint(3, 6) + heroi.focogen * 0.07)
+        return ataquefinal
+
 class Inimigo(Monstro):
     def __init__(self, nome, vida, ataque, ouro, xp) : 
         super().__init__(nome, vida, ataque, ouro, xp) # Herdou os parametros de monstro
@@ -40,7 +43,7 @@ class Inimigo(Monstro):
         self.habilidade = None
 
     def usar_habilidade(self, heroi):
-        pass
+        return []
 
 class Boss(Monstro):        # EXCLUSIVO DOS BOSSES POR HORA , defesa magica e defesa(ataque)
     def __init__(self, nome, vida, ataque, ouro, xp, habilidade, defesa) : 
@@ -57,25 +60,30 @@ class Boss(Monstro):        # EXCLUSIVO DOS BOSSES POR HORA , defesa magica e de
         print(f"Vida: {self.vida}/{self.vidamax}")
         print(f"Ataque: {self.ataque}")
 
-    def atacar(self, heroi):
-            ataquefinal = max(1, self.ataque - heroi.defesa)            # Foco do heroi dento do ataque do inimigo para poder garantir que seja gerado caso atacar 2 vezes
-            heroi.vida -= ataquefinal
-            print(f"\nO {self.nome} te ataca causando {ataquefinal} de dano")
-            heroi.foco = min(100, heroi.foco + (random.randint(10, 14) + heroi.focogen * 1.02))
-            input("\nPressione ENTER para continuar...")
-    
+    def atacar_calculo(self, heroi, defendendo=False, gera_furia=True):
+        ataquefinal = max(1, self.ataque - heroi.defesa)
+        if defendendo:
+            ataquefinal = max(1, ataquefinal // 2)  # "dano pela metade"
+        heroi.vida -= ataquefinal
+        if gera_furia:
+            heroi.foco = min(100, heroi.foco + random.randint(3, 6) + heroi.focogen * 0.07)
+        return ataquefinal
+
     def usar_habilidade(self, heroi):
-        if self.habilidade_usada == False:
-            self.habilidade(heroi,self)
+        mensagens = []
+        for habilidade in self.habilidade:
+            mensagens += habilidade(heroi, self)
+        return mensagens
 
 def slime_absorção(heroi, boss):
-    if boss.habilidade_usada == False and boss.vida <= boss.vidamax * 0.50:
+    mensagens = []
+    if not boss.habilidade_usada and boss.vida <= boss.vidamax * 0.50:
         cura = random.randint(99, 110)
         boss.vida = min(boss.vidamax, boss.vida + cura)
-        print("O Rei Slime absorveu a massa de outros slimes ao redor de si!")
-        print(f"Rei Slime recuperou {cura} de HP!")
-        input("\nPressione ENTER para continuar...")
+        mensagens.append("O Rei Slime absorveu a massa de outros slimes ao redor de si!")
+        mensagens.append(f"Rei Slime recuperou {cura} de HP!")
         boss.habilidade_usada = True
+    return mensagens
 
 def frenesi_lobo(heroi, boss):
     global texto_lobo

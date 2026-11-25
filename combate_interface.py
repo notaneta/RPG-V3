@@ -1,7 +1,7 @@
 """Tela de combate do RPG V3 (customtkinter).
 
 Fluxo:
-    1. criar_tela_combate(frame)       -> monta os widgets (uma vez, na abertura)
+    1. criar_tela_combate(frame)-> monta os widgets (uma vez, na abertura)
     2. iniciar_combate(heroi, inimigo) -> preenche a tela com os dados (a cada combate)
     3. os botões chamam atacar(), abrir_magias(), etc.
 """
@@ -11,6 +11,8 @@ from magias import listamagias, executar_magia
 from habilidades import listahabilidades, executar_skill
 import customtkinter as ctk
 
+levantou_defesa = False # Adicionado funcionalidade de DEFENDER no meu jogo, visto no video de atualização do RPG V2
+usou_habilidade = False # Removido geração de fúria apos usar habilidade no meu jogo, visto no video de atualização do RPG V2
 
 # ============================================================
 # CONFIGURAÇÕES
@@ -30,6 +32,7 @@ COR_INIMIGO = "red"
 # ============================================================
 jogador = None
 inimigo = None
+ao_terminar = None   # função que o menu passa: é chamada quando aperta "Continuar" (recebe venceu=True/False)
 
 # Widgets: são criados em criar_tela_combate, mas ficam declarados aqui
 # para as outras funções do arquivo poderem usar.
@@ -51,10 +54,11 @@ lista_de_botoes = []   # botões de ação (para bloquear/liberar de uma vez)
 # ============================================================
 # INÍCIO DO COMBATE
 # ============================================================
-def iniciar_combate(heroi_recebido, inimigo_recebido):
-    global jogador, inimigo
+def iniciar_combate(heroi_recebido, inimigo_recebido, quando_terminar=None):
+    global jogador, inimigo, ao_terminar
     jogador = heroi_recebido
     inimigo = deepcopy(inimigo_recebido)  # cópia, para não alterar o inimigo original
+    ao_terminar = quando_terminar         # o combate não precisa saber pra qual tela voltar
 
     criar_magia()
     criar_skill()
@@ -143,14 +147,10 @@ def verificar_fim(): # Verifica condições, se GAME OVER, ou recompensas
         return True
 
 def fim_combate():
-    if inimigo.vida <= 0:
-        botao_continuar.grid_forget()
-        from menu_interface import mostrar_tela
-        mostrar_tela("area")
-
-    if jogador.vida <= 0:
-        from menu_interface import  janela
-        janela.destroy()  # Fecha janela Ao morrer
+    botao_continuar.destroy()   # destroy (e não grid_forget) para não acumular botões escondidos
+    venceu = jogador.vida > 0
+    if ao_terminar:
+        ao_terminar(venceu)     # quem decide o que acontece depois é o menu_interface
 
 # ============================================================
 # AÇÕES DO JOGADOR
@@ -161,6 +161,13 @@ def atacar():
 
     finalizar_acao_heroi()
 
+def defesa():
+    global levantou_defesa
+    bloquear_botoes()
+    levantou_defesa = True
+    escrever_historico("Você se defendeu (dano pela metade no próximo ataque).")
+
+    finalizar_acao_heroi()
 
 def lancar_magia(magia):
     dano = executar_magia(jogador, inimigo, magia)
@@ -176,12 +183,14 @@ def lancar_magia(magia):
 
 
 def lancar_skill(skill):
+    global usou_habilidade
     dano = executar_skill(jogador, inimigo, skill)
     if dano is None:
         escrever_historico("Fúria Insuficiente para a habilidade!")
         voltar()
         return
     else:
+        usou_habilidade = True
         escrever_historico(f"Você usou {skill.nome}!")
         escrever_historico(f"Dano causado ao inimigo: {dano}")
 
@@ -211,14 +220,31 @@ def finalizar_acao_heroi():
 # TURNO DO INIMIGO
 # ============================================================
 def turno_inimigo():
-    # Provisório: o inimigo.atacar() original tem input() e congelaria a janela.
-    # Melhorar a IA depois (sortear entre ataque e habilidade).
-    dano = inimigo.atacar_calculo(jogador)
+    global levantou_defesa, usou_habilidade
+    dano = inimigo.atacar_calculo(jogador, defendendo=levantou_defesa, gera_furia=not usou_habilidade)
+    levantou_defesa = False      # o flag vale por um turno só
+    usou_habilidade = False
     escrever_historico(f"{inimigo.nome} causou {dano} de dano em você")
     atualizar_tela()
-    liberar_botoes()
+
+    if jogador.vida > 0:         # se o herói já caiu, o boss não fala nem usa habilidade
+        mostrar_mensagens(inimigo.usar_habilidade(jogador), terminar_turno)
+    else:
+        terminar_turno()
+
+
+def terminar_turno():
+    atualizar_tela()
     if verificar_fim():
         return
+    liberar_botoes()
+
+def mostrar_mensagens(mensagens, depois, atraso=500):
+    if not mensagens:
+        depois()
+        return
+    escrever_historico(mensagens[0])
+    historico.after(atraso, lambda: mostrar_mensagens(mensagens[1:], depois, atraso))
 
 # ============================================================
 # TROCA DE PAINÉIS (AÇÕES <-> MAGIAS / SKILLS / ITENS)
@@ -323,6 +349,7 @@ def criar_botoes(tela):
     # Botões de ação: (texto, função). None = ainda sem ação.
     acoes = [
         ("Atacar", atacar),
+        ("Defesa", defesa),
         ("Mágias", abrir_magias),
         ("Habilidades", abrir_skills),
         ("Itens", abrir_itens),
@@ -369,9 +396,9 @@ def criar_itens():
     botoes_itens.clear()
 
     for linha, item in enumerate(jogador.inventario):
-        botao = ctk.CTkButton(painel_skills, text=item.nome, command=lambda m=item: usar_item(m))
+        botao = ctk.CTkButton(painel_itens, text=item.nome, command=lambda m=item: usar_item(m))
         botao.grid(row=linha, column=0, sticky="nw", padx=5, pady=5)
 
     botao_voltar = ctk.CTkButton(painel_itens, text="Voltar", command=voltar)
     botao_voltar.grid(row=len(jogador.inventario), column=0, sticky="nw", padx=5, pady=5)
-    botao_skills.append(botao_voltar)
+    botoes_itens.append(botao_voltar)

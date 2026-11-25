@@ -1,6 +1,5 @@
 import random, copy, sys
 
-import heroi
 from combate import combateini, combatesys
 from inimigos import boss_floresta, boss_caverna, inimigos_caverna, inimigos_floresta, inimigos_montanhasgeladas, \
     boss_montanhasgeladas, inimigos_castelo, boss_castelo_do_caos, boss_abismo
@@ -84,43 +83,72 @@ class Progressao:
         return
 
 
-exploracao = True
+# ============================================================
+# EXPLORAÇÃO (versão janela) - aqui NÃO tem nada de tela.
+# O mundo só decide "quem é o próximo inimigo" e "o que muda quando vence".
+# Quem mostra as coisas é o menu_interface.
+# Tudo é lido de heroi.zona_atual / heroi.vila_atual (o herói guarda onde está,
+# igual no V2, assim depois dá pra salvar no banco de dados).
+# ============================================================
+
+def proxima_luta(heroi):
+    """Devolve (inimigo, tipo) da próxima luta da zona, ou (None, None) se a zona acabou.
+    tipo = "normal", "boss" ou "especial"."""
+    zona = heroi.zona_atual
+
+    if zona.progresso < zona.lutas_para_boss and zona.lista_inimigos:
+        return copy.deepcopy(random.choice(zona.lista_inimigos)), "normal"
+
+    if not zona.bossderrotado:
+        return copy.deepcopy(zona.boss[0]), "boss"
+
+    if len(zona.boss) > 1 and not zona.boss_especial_derrotado:
+        return copy.deepcopy(zona.boss[1]), "especial"
+
+    return None, None
 
 
-def iniciar_exploracao():
-    from menu_interface import abrir_combate
-    global exploracao
+def registrar_vitoria(heroi, tipo):
+    """Chamada só quando o herói VENCE a luta. Atualiza o progresso da zona."""
+    zona = heroi.zona_atual
+    if tipo == "normal":
+        zona.progresso += 1
+    elif tipo == "boss":
+        zona.bossderrotado = True
+    elif tipo == "especial":
+        zona.boss_especial_derrotado = True
+        heroi.focogen += 0.3
 
-    if exploracao:
-        if zona_atual.progresso == 5:
-            boss = copy.deepcopy(zona_atual.boss[0])
-            abrir_combate(boss)
 
-        elif zona_atual.progresso == 6:
-            boss = copy.deepcopy(zona_atual.boss[1])
-            abrir_combate(boss)
-
-            exploracao = False
-
-        else:
-            inimigoaleatório = copy.deepcopy(random.choice(zona_atual.lista_inimigos))
-            abrir_combate(inimigoaleatório)
+def pode_viajar(heroi):
+    zona = heroi.zona_atual
+    return zona.bossderrotado and zona.proximo_cenario is not None
 
 
 def viajar_area(heroi):
+    """Leva o herói para a próxima zona e a próxima vila. Devolve True se viajou."""
+    if not pode_viajar(heroi):
+        return False
+
     heroi.zona_atual = heroi.zona_atual.proximo_cenario
-    heroi.vila_atual = (heroi.vila_atual.proximavila)
+
+    proxima_vila = heroi.vila_atual.proximavila
+    if hasattr(proxima_vila, "nome"):   # a vila 4 tem proximavila=1, então só troca se for uma Vila de verdade
+        heroi.vila_atual = proxima_vila
+    return True
 
 
 # 1. Zonas
 zona5_abismo = Progressao("Abismo do Rei", None, boss_abismo, proximo_cenario=None)
 zona4_castelo_do_caos = Progressao("Castelo do Caos", inimigos_castelo, boss_castelo_do_caos,
-                                   proximo_cenario=zona5_abismo)  # Cavaleiros sombrios, etc /  final boss
+       proximo_cenario=zona5_abismo)  # Cavaleiros sombrios, etc /  final boss
 zona3_montanhagelada = Progressao("Montanha Congelada", inimigos_montanhasgeladas, boss_montanhasgeladas,
                                   proximo_cenario=zona4_castelo_do_caos)
 zona2_caverna = Progressao("Caverna Sombria", inimigos_caverna, boss_caverna, proximo_cenario=zona3_montanhagelada)
 zona1_floresta = Progressao("Floresta Verde", inimigos_floresta, boss_floresta, proximo_cenario=zona2_caverna)
 
+# ATENÇÃO: a janela NÃO usa mais esse zona_atual. Ela usa heroi.zona_atual.
+# Ficou aqui só por causa do código antigo de terminal (menumundo / hud_mundo).
 zona_atual = zona1_floresta  # nome, lista_inimigos, boss, proximo_cenario):
 inimigos_acampamento = zona_atual.lista_inimigos  # Faz os inimigos do acampamento serem sempre baseados no local ondem você está, porém vou pensar ainda se eixo essa opção, pois pode ser chato ficar lutando toda hora
 

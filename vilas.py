@@ -86,6 +86,9 @@ Vila_atual = vila_inicial
 from itens import poçoes, usaritem
 from util import limpar_tela
 
+
+
+
 def menuloja(heroi):
 
     nome_vila = heroi.vila_atual.nome
